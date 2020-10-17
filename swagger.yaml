@@ -1,26 +1,27 @@
 openapi: 3.0.1
 info:
-  title: CrInCS
-  description: This is the documentation for the backend API supporting Team Zero's
-    CrInCS Project.
+  title: SwiftServe
+  description: This is the documentation for the backend API supporting SwiftServe Project.
   contact:
     email: rachitb@gatech.edu
-  version: 0.0.5
+  version: 0.0.1
 externalDocs:
   description: Find out more about Swagger
   url: http://swagger.io
 servers:
-- url: https://crincs-dot-thinger.ue.r.appspot.com
+- url: https://swiftserve-dot-thinger.ue.r.appspot.com
   description: Google Cloud temporary URL
 tags:
+- name: auth
+  description: Endpoints related to authentication
 - name: group
   description: Endpoints related to group management
 
 paths:
-  /user:
-    put:
+  /auth/register:
+    post:
       tags:
-      - user
+      - auth
       summary: Registers a user in the database
       operationId: register
       description: The user must not be already registered in the system. The user must provide at least 8-character password. The user must provide a valid email address. No field can exceed 128 characters.
@@ -33,7 +34,7 @@ paths:
                 - $ref: '#/components/schemas/UserLogin'
         required: true
       responses:
-        200:
+        201:
           description: User created successfully
           content: {}
         400:
@@ -45,9 +46,10 @@ paths:
         422:
           description: Input rules broken - check description
           content: {}
+  /auth/login:
     post:
       tags:
-      - user
+      - auth
       summary: Logs in a user
       description: 'Exchanges username and password for a Bearer token. The user must already be registered. The provided combination of email address and password must be correct. No field can exceed 128 characters.'
       operationId: login
@@ -60,7 +62,16 @@ paths:
       responses:
         200:
           description: User logged in successfully
-          content: {}
+          content:
+            application/json:
+              schema:
+                properties:
+                  access_token:
+                    type: string
+                    description: JWT access token to be used for future requests
+                  token_type:
+                    type: string
+                    description: Type of the access token - currently, defaults to bearer
         400:
           description: The provided combination of email address and password was invalid
           content: {}
@@ -130,41 +141,30 @@ components:
     User:
       type: object
       required:
-        - username
-        - firstName
-        - lastName
+        - email
       properties:
         id:
-          type: integer
+          type: string
           description: Internal ID of the user, as seen in the database
           format: int64
-        username:
-          type: string
-          minLength: 3
-          maxLength: 128
-          description: Username, as requested by the user
-        firstName:
-          type: string
-          minLength: 3
-          maxLength: 128
-          description: First name of the user
-        lastName:
-          type: string
-          minLength: 3
-          maxLength: 128
-          description: Last name of the user
-    UserLogin:
-      type: object
-      required:
-        - email
-        - password
-      properties:
         email:
           type: string
           description: Email address of the user
           format: email
           minLength: 3
           maxLength: 128
+    UserLogin:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 128
+          description: Username, as requested by the user, defaulted to email address
+          format: email
         password:
           type: string
           description: Password of the user
