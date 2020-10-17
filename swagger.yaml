@@ -14,8 +14,15 @@ servers:
 tags:
 - name: auth
   description: Endpoints related to authentication
-- name: group
-  description: Endpoints related to group management
+- name: item
+  description: Endpoints related to item management
+- name: store
+  description: Endpoints related to store management
+- name: order
+  description: Endpoints related to order management
+
+security:
+  - userAuth: []
 
 paths:
   /auth/register:
@@ -25,6 +32,7 @@ paths:
       summary: Registers a user in the database
       operationId: register
       description: The user must not be already registered in the system. The user must provide at least 8-character password. The user must provide a valid email address. No field can exceed 128 characters.
+      security: []
       requestBody:
         content:
           application/json:
@@ -53,6 +61,7 @@ paths:
       summary: Logs in a user
       description: 'Exchanges username and password for a Bearer token. The user must already be registered. The provided combination of email address and password must be correct. No field can exceed 128 characters.'
       operationId: login
+      security: []
       requestBody:
         content:
           application/json:
@@ -75,66 +84,133 @@ paths:
         400:
           description: The provided combination of email address and password was invalid
           content: {}
-  /group:
+
+  /store:
     put:
       tags:
-        - group
-      summary: Creates a group for the user
-      operationId: create_group
-      description: The user must be registered and logged in to use this endpoint.
+        - store
+      summary: Creates a store
+      description: The user must be logged in to use this endpoint. The user must be an owner.
+      operationId: create_store
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Group'
-        required: true
+              $ref: '#/components/schemas/StoreCreate'
       responses:
-        200:
-          description: Group created successfully
+        201:
+          description: Store created successfully
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/Group'
-                  - $ref: '#/components/schemas/GroupHiddenDetails'
-        401:
-          description: User unauthorized / Bearer token expired
+                  - $ref: '#/components/schemas/StoreCreate'
+                  - $ref: '#/components/schemas/StoreHiddenDetails'
+        403:
+          description: The user does not have an owner account
           content: {}
         422:
-          description: Group name already exists
+          description: Input rules broken - check description
           content: {}
+  /store/{store_id}/order:
     post:
       tags:
-        - group
-      summary: Registers a user in a group
-      operationId: join_group
-      description: The user must be registered and logged in to use this endpoint. The user must not be the owner / host of the group.
+        - store
+      summary: Creates a store order
+      description: The user must be logged in to use this endpoint.
+      operationId: create_store_order
+      parameters:
+        - in: path
+          name: store_id
+          schema:
+            type: integer
+          required: true
+          description: ID of the store, as stored in the database
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderItemArray'
       responses:
-        200:
-          description: Group joined successfully
-          content: {}
-        401:
-          description: User unauthorized / Bearer token expired
-          content: {}
-        422:
-          description: User is the owner of group - owners cannot join their own group
-          content: {}
-    get:
-      tags:
-        - group
-      summary: Gets a list of groups the user is a part / owner of
-      operationId: get_all_groups
-      description: The user must be registered and logged in to use this endpoint.
-      responses:
-        200:
-          description: List of groups the user is a part / owner of
+        201:
+          description: Order created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GroupArray'
-        401:
-          description: User unauthorized / Bearer token expired
+                properties:
+                  order_id:
+                    type: integer
+                    description: ID of the order that just got created
+                  order_items:
+                    type: array
+                    description: A list of items in the order
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/OrderItem'
+                        - $ref: '#/components/schemas/OrderItemHiddenDetails'
+        422:
+          description: Input rules broken - check description
           content: {}
+    get:
+      tags:
+        - store
+      summary: Gets a list of store orders
+      description: The user must be logged in to use this endpoint. The user must be an owner.
+      operationId: get_store_orders
+      parameters:
+        - in: path
+          name: store_id
+          schema:
+            type: integer
+          required: true
+          description: ID of the store, as stored in the database
+      responses:
+        200:
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                properties:
+                  orders:
+                    type: array
+                    description: List of orders
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/Order'
+                        - $ref: '#/components/schemas/OrderHiddenDetails'
+                        - $ref: '#/components/schemas/OrderItemArray'
+        403:
+          description: The user does not have an owner account
+          content: {}
+        422:
+          description: Input rules broken - check description
+          content: {}
+  /store/{store_id}/item:
+    get:
+      tags:
+        - store
+      summary: Gets a list of store items
+      description: No constraints for this endpoint.
+      operationId: get_store_items
+      security: []
+      parameters:
+        - in: path
+          name: store_id
+          schema:
+            type: integer
+          required: true
+          description: ID of the store, as stored in the database
+      responses:
+        200:
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MenuItemArray'
+        422:
+          description: Input rules broken - check description
+          content: {}
+
 
 components:
   schemas:
@@ -171,49 +247,115 @@ components:
           format: password
           minLength: 8
           maxLength: 128
-    GroupID:
-      type: object
-      required:
-        - id
-      properties:
-        id:
-          type: integer
-          description: Internal ID of the group, as seen in the database
-          format: int64
-    Group:
+    StoreCreate:
       type: object
       required:
         - name
       properties:
-        id:
-          type: integer
-          description: Internal ID of the group, as seen in the database
-          format: int64
         name:
           type: string
-          description: Short description of the group
-          minLength: 3
-          maxLength: 128
-    GroupHiddenDetails:
+          description: Name of the store
+    StoreHiddenDetails:
       type: object
       properties:
-        creation_time:
+        id:
+          type: integer
+          description: ID of the store, as stored in the database
+        owner:
           type: string
-          description: DateTime of the group's creation time
-          format: date-time
-        is_active:
-          type: boolean
-          description: Flag denoting whether or not is a group active
-    GroupArray:
+          description: ID of the store owner, as stored in the database
+    OrderItem:
+      type: object
+      required:
+        - item_id
+        - quantity
+      properties:
+        item_id:
+          type: integer
+          description: ID of the item, as stored in the database
+        quantity:
+          type: string
+          description: Number of items of the same type in the order
+    OrderItemHiddenDetails:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID of the order item, as stored in the database
+        order_id:
+          type: integer
+          description: ID of the order the item belongs to, as stored in the database
+    OrderItemArray:
+      type: object
+      required:
+        - order_items
+      properties:
+        order_items:
+          type: array
+          description: An array of order item objects
+          items:
+            $ref: '#/components/schemas/OrderItem'
+    Order:
+      type: object
+      required:
+        - store_id
+        - buyer
+      properties:
+        store_id:
+          type: integer
+          description: ID of the store the order is placed in, as stored in the database
+        buyer:
+          type: string
+          description: ID of the buyer, as stored in the user's database
+    OrderHiddenDetails:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID of the order, as stored in the database
+        status:
+          type: integer
+          minimum: 0
+          maximum: 2
+          description: Status code of the order status - 0 for not yet started, 1 for in progress, 2 for prepared
+    MenuItem:
       type: object
       required:
         - name
+        - price
+        - store_id
       properties:
-        groups:
+        name:
+          type: string
+          description: Name of the menu item
+        description:
+          type: string
+          description: Description of the menu item
+        price:
+          type: number
+          format: float
+          description: Price of the menu item
+        store_id:
+          type: integer
+          description: ID of the store the menu item belongs to, as stored in the database
+    MenuItemHiddenDetails:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID of the menu item, as seen in the database
+    MenuItemArray:
+      type: object
+      required:
+        - items
+      properties:
+        order_items:
           type: array
-          description: An array of group objects
+          description: An array of order item objects
           items:
-            $ref: '#/components/schemas/Group'
+            allOf:
+              - $ref: '#/components/schemas/MenuItem'
+              - $ref: '#/components/schemas/MenuItemHiddenDetails'
 
   securitySchemes:
     userAuth:
