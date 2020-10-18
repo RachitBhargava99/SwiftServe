@@ -105,4 +105,4 @@ def get_item_suggestions(request: Request, db: Session = Depends(get_db)):
     new_items = [x for x in get_items_by_store_id(db, 1) if x.id not in items]
     highest_score_item = max(new_items, key=lambda x: x.score)
     payload['highest_score_item'] = {"item_id": highest_score_item.id, "name": highest_score_item.name, "quantity": 1}
-    return {"sessionInfo": session_info, "fulfillment_response": {"messages": }}
+    return {"sessionInfo": session_info, "fulfillment_response": {"messages": ""}}
