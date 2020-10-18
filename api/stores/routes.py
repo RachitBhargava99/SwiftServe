@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from db import schemas
 from db.db import get_db
-from .controllers import create_store, get_store_details
+from .controllers import create_store, get_store_details, get_all_reservations_by_store_id
 from api.orders.controllers import create_order_with_items, get_all_orders_by_store_id
 from api.items.controllers import get_items_by_store_id
 from api.tables.controllers import get_tables_by_store_id, get_available_tables, delete_all_tables_by_store_id
@@ -40,13 +40,11 @@ def get_store_items(store_id: int, db: Session = Depends(get_db)):
 
 
 @router.get('/{store_id}/table', response_model=schemas.TableList)
-def get_all_tables(store_id: int, db: Session = Depends(get_db), user: User = Depends(fastapi_users.get_current_user)):
-    if get_store_details(db, store_id).owner != str(user.id):
-        raise HTTPException(403, detail="The user is not an owner of the selected store")
+def get_all_tables(store_id: int, db: Session = Depends(get_db)):
     return {"tables": get_tables_by_store_id(db, store_id)}
 
 
-@router.delete('/{store_id}/table', response_model=schemas.TableList)
+@router.delete('/{store_id}/table')
 def delete_all_tables(store_id: int, db: Session = Depends(get_db), user: User = Depends(fastapi_users.get_current_user)):
     if get_store_details(db, store_id).owner != str(user.id):
         raise HTTPException(403, detail="The user is not an owner of the selected store")
@@ -57,3 +55,10 @@ def delete_all_tables(store_id: int, db: Session = Depends(get_db), user: User =
 @router.post('/{store_id}/table/available', response_model=schemas.TableList)
 def get_available_tables_route(store_id: int, reservation: schemas.ReservationCreate, db: Session = Depends(get_db)):
     return {"tables": get_available_tables(db, store_id, reservation.start_time, reservation.end_time)}
+
+
+@router.get('/{store_id}/reservation', response_model=schemas.ReservationList)
+def get_all_tables(store_id: int, db: Session = Depends(get_db), user: User = Depends(fastapi_users.get_current_user)):
+    if get_store_details(db, store_id).owner != str(user.id):
+        raise HTTPException(403, detail="The user is not an owner of the selected store")
+    return {"tables": get_all_reservations_by_store_id(db, store_id)}

@@ -139,6 +139,7 @@ paths:
           content: {}
   /store/{store_id}/order:
     post:
+      deprecated: true
       tags:
         - store
       summary: Creates a store order
@@ -240,7 +241,7 @@ paths:
       tags:
         - store
       summary: Gets a list of tables at a given store
-      description: The user must be logged in to use this endpoint. The user must be an owner of the store.
+      description: The user must be logged in to use this endpoint.
       operationId: get_store_tables
       parameters:
         - in: path
@@ -257,7 +258,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TableArray'
         403:
-          description: The user does not have an owner account / the user is not the owner of the selected store
+          description: The user is not logged in
           content: {}
         422:
           description: Input rules broken - check description
@@ -286,12 +287,44 @@ paths:
           description: Input rules broken - check description
           content: {}
   /store/{store_id}/table/available:
-    get:
+    post:
       tags:
         - store
       summary: Gets a list of available tables at a given store
       description: The user must be logged in to use this endpoint. The user must be an owner of the store.
       operationId: get_available_store_tables
+      parameters:
+        - in: path
+          name: store_id
+          schema:
+            type: integer
+          required: true
+          description: ID of the store, as stored in the database
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Reservation'
+      responses:
+        200:
+          description: List of tables
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableArray'
+        403:
+          description: The user does not have an owner account / the user is not the owner of the selected store
+          content: {}
+        422:
+          description: Input rules broken - check description
+          content: {}
+  /store/{store_id}/reservation:
+    get:
+      tags:
+        - store
+      summary: Gets a list of reservations at a given store
+      description: The user must be logged in to use this endpoint. The user must be an owner of the store.
+      operationId: get_store_reservations
       parameters:
         - in: path
           name: store_id
@@ -305,7 +338,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TableArray'
+                $ref: '#/components/schemas/ReservationArray'
         403:
           description: The user does not have an owner account / the user is not the owner of the selected store
           content: {}
@@ -499,7 +532,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Reservation'
+              allOf:
+                - $ref: '#/components/schemas/Reservation'
+                - $ref: '#/components/schemas/OrderItemArray'
       responses:
         201:
           description: Reservation created successfully

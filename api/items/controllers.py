@@ -16,3 +16,7 @@ def create_menu_item(db: Session, store_id: int, item_name: str, item_descriptio
 def get_items_by_store_id(db: Session, store_id: int) -> List[schemas.Item]:
     menu_items = db.query(models.MenuItem).filter_by(store_id=store_id)
     return [x for x in menu_items]
+
+
+def get_all_item_names(db: Session) -> List[str]:
+    return [x.name for x in db.query(models.MenuItem).all()]

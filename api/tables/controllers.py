@@ -35,9 +35,9 @@ def is_available(db: Session, table_id: int, start_time: datetime, end_time: dat
     return True
 
 
-def reserve_table(db: Session, table_id: int, customer_id: str, reservation: schemas.ReservationCreate) -> schemas.Reservation:
+def reserve_table(db: Session, table_id: int, customer_id: str, reservation: schemas.ReservationCreate, order_id: int) -> schemas.Reservation:
     db_item = models.Reservation(customer_id=customer_id, table_id=table_id,
-                                 start_time=reservation.start_time, end_time=reservation.end_time)
+                                 start_time=reservation.start_time, end_time=reservation.end_time, order_id=order_id)
     db.add(db_item)
     db.commit()
     db.refresh(db_item)

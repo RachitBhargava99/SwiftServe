@@ -18,6 +18,7 @@ class MenuItem(Base):
     description = Column(String(255), unique=False)
     price = Column(Float)
     store_id = Column(Integer, ForeignKey('stores.id'))
+    score = Column(Integer, default=1)
 
 
 class Store(Base):
@@ -32,6 +33,7 @@ class Order(Base):
     __tablename__ = 'orders'
 
     id = Column(Integer, primary_key=True, index=True)
+    status = Column(Integer, default=0)
     store_id = Column(Integer, ForeignKey('stores.id'))
     buyer = Column(String(255), ForeignKey('user.id'))
 
@@ -66,3 +68,4 @@ class Reservation(Base):
     table_id = Column(Integer, ForeignKey('restauranttables.id'))
     start_time = Column(DateTime)
     end_time = Column(DateTime)
+    order_id = Column(Integer, ForeignKey('orders.id'))

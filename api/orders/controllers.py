@@ -6,7 +6,7 @@ from db import models, schemas
 
 
 def create_order(db: Session, buyer: str, store_id: int) -> schemas.Order:
-    db_item = models.Order(store_id=store_id, buyer=buyer)
+    db_item = models.Order(store_id=store_id, buyer=buyer, status=0)
     db.add(db_item)
     db.commit()
     db.refresh(db_item)
@@ -28,12 +28,15 @@ def create_order_with_items(db: Session, buyer: str, store_id: int, order_items:
 
 
 def get_order_items_by_order_id(db: Session, order_id: int) -> List[schemas.OrderItem]:
-    all_items = db.query(models.OrderItem).filter_by(order_id=order_id)
-    return [x for x in all_items]
+    all_items = [x for x in db.query(models.OrderItem).filter_by(order_id=order_id)]
+    for curr_item in all_items:
+        curr_item.name = db.query(models.MenuItem).filter_by(id=curr_item.item_id).first().name
+    return all_items
 
 
 def get_all_orders_by_store_id(db: Session, store_id: int) -> List[schemas.OrderWithItems]:
     all_orders = [x for x in db.query(models.Order).filter_by(store_id=store_id)]
+    print(len(all_orders))
     for curr_order in all_orders:
         curr_order.order_items = get_order_items_by_order_id(db, curr_order.id)
     return all_orders
@@ -48,4 +51,5 @@ def update_order_status(db: Session, order_id: int, new_status: int) -> schemas.
     db_order.status = new_status
     db.commit()
     db.refresh(db_order)
+    db_order = get_order_by_id(db, order_id)
     return db_order

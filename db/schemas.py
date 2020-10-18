@@ -86,6 +86,7 @@ class OrderItemBase(BaseModel):
 class OrderItem(OrderItemBase):
     id: Optional[int]
     order_id: Optional[int]
+    name: Optional[str]
 
     class Config:
         orm_mode = True
@@ -114,7 +115,7 @@ class OrderBase(BaseModel):
 
 class Order(OrderBase):
     id: int
-    status: int = 0     # 0 for incomplete, 1 for making, 2 for complete
+    status: int     # 0 for incomplete, 1 for making, 2 for complete
 
     class Config:
         orm_mode = True
@@ -179,6 +180,7 @@ class Reservation(ReservationBase):
     id: int
     table_id: int
     customer_id: str
+    order_id: int
 
     class Config:
         orm_mode = True
@@ -191,3 +193,8 @@ class ReservationCreate(ReservationBase):
 
 class ReservationList(BaseModel):
     tables: List[Reservation]
+
+
+class ReservationWithOrderItems(ReservationCreate, OrderItemCreateList):
+    class Config:
+        orm_mode = True
