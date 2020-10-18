@@ -5,16 +5,6 @@ from fastapi_users.db import SQLAlchemyBaseUserTable, SQLAlchemyUserDatabase
 from .db import Base
 
 
-class Group(Base):
-    __tablename__ = 'groups'
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(127), unique=True)
-    creation_time = Column(DateTime)
-    is_active = Column(Boolean, default=True)
-    spotify_token = Column(String(255))
-
-
 class UserTable(Base, SQLAlchemyBaseUserTable):
     is_owner = Column(Boolean, default=False)
     ncr_account_num = Column(String(31))
@@ -35,15 +25,15 @@ class Store(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(127), unique=True)
-    owner = Column(String, ForeignKey('user.id'))
+    owner = Column(String(255), ForeignKey('user.id'))
 
 
 class Order(Base):
     __tablename__ = 'orders'
 
     id = Column(Integer, primary_key=True, index=True)
-    store_id = Column(Integer, ForeignKey('user.id'))
-    buyer = Column(String, ForeignKey('user.id'))
+    store_id = Column(Integer, ForeignKey('stores.id'))
+    buyer = Column(String(255), ForeignKey('user.id'))
 
 
 class OrderItem(Base):
@@ -53,3 +43,26 @@ class OrderItem(Base):
     item_id = Column(Integer, ForeignKey('items.id'))
     quantity = Column(Integer)
     order_id = Column(Integer, ForeignKey('orders.id'))
+
+
+class Table(Base):
+    __tablename__ = 'restauranttables'
+
+    id = Column(Integer, primary_key=True, index=True)
+    store_id = Column(Integer, ForeignKey('stores.id'))
+    internal_id = Column(String(31))
+    x_coords = Column(Integer)
+    y_coords = Column(Integer)
+    width = Column(Integer)
+    height = Column(Integer)
+    cap = Column(Integer)
+
+
+class Reservation(Base):
+    __tablename__ = 'tables'
+
+    id = Column(Integer, primary_key=True, index=True)
+    customer_id = Column(String(255))
+    table_id = Column(Integer, ForeignKey('restauranttables.id'))
+    start_time = Column(DateTime)
+    end_time = Column(DateTime)

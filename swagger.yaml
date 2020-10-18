@@ -11,6 +11,10 @@ externalDocs:
 servers:
 - url: https://swiftserve-dot-thinger.ue.r.appspot.com
   description: Google Cloud temporary URL
+- url: http://127.0.0.1:8000
+  description: Localhost URL
+- url: https://e09bbfe35b86.ngrok.io
+  description: Tunneled URL
 tags:
 - name: auth
   description: Endpoints related to authentication
@@ -20,6 +24,8 @@ tags:
   description: Endpoints related to store management
 - name: order
   description: Endpoints related to order management
+- name: table
+  description: Endpoints related to table management
 
 security:
   - userAuth: []
@@ -64,7 +70,7 @@ paths:
       security: []
       requestBody:
         content:
-          application/json:
+          application/x-www-form-urlencoded:
             schema:
               $ref: '#/components/schemas/UserLogin'
         required: true
@@ -83,6 +89,25 @@ paths:
                     description: Type of the access token - currently, defaults to bearer
         400:
           description: The provided combination of email address and password was invalid
+          content: {}
+  /auth:
+    get:
+      tags:
+      - auth
+      summary: Returns details about the logged in user
+      description: The user must be logged in
+      operationId: get_user_details
+      responses:
+        200:
+          description: User details
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/User'
+                  - $ref: '#/components/schemas/UserLogin'
+        409:
+          description: The user is not logged in
           content: {}
 
   /store:
@@ -210,6 +235,286 @@ paths:
         422:
           description: Input rules broken - check description
           content: {}
+  /store/{store_id}/table:
+    get:
+      tags:
+        - store
+      summary: Gets a list of tables at a given store
+      description: The user must be logged in to use this endpoint. The user must be an owner of the store.
+      operationId: get_store_tables
+      parameters:
+        - in: path
+          name: store_id
+          schema:
+            type: integer
+          required: true
+          description: ID of the store, as stored in the database
+      responses:
+        200:
+          description: List of tables
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableArray'
+        403:
+          description: The user does not have an owner account / the user is not the owner of the selected store
+          content: {}
+        422:
+          description: Input rules broken - check description
+          content: {}
+    delete:
+      tags:
+        - store
+      summary: Deletes all tables in a store
+      description: The user must be logged in to use this endpoint. The user must be an owner of the store.
+      operationId: delete_all_tables
+      parameters:
+        - in: path
+          name: store_id
+          schema:
+            type: integer
+          required: true
+          description: ID of the store, as stored in the database
+      responses:
+        200:
+          description: Tables deleted successfully
+          content: {}
+        403:
+          description: The user does not have an owner account / the user is not the owner of the selected store
+          content: {}
+        422:
+          description: Input rules broken - check description
+          content: {}
+  /store/{store_id}/table/available:
+    get:
+      tags:
+        - store
+      summary: Gets a list of available tables at a given store
+      description: The user must be logged in to use this endpoint. The user must be an owner of the store.
+      operationId: get_available_store_tables
+      parameters:
+        - in: path
+          name: store_id
+          schema:
+            type: integer
+          required: true
+          description: ID of the store, as stored in the database
+      responses:
+        200:
+          description: List of tables
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableArray'
+        403:
+          description: The user does not have an owner account / the user is not the owner of the selected store
+          content: {}
+        422:
+          description: Input rules broken - check description
+          content: {}
+
+  /item:
+    put:
+      tags:
+        - item
+      summary: Create a menu item for the desired store
+      description: The user must be logged in. The user must be an owner. The user must be the owner of the store.
+      operationId: create_item
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MenuItem'
+      responses:
+        201:
+          description: Menu item created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/MenuItemHiddenDetails'
+                - $ref: '#/components/schemas/MenuItem'
+        403:
+          description: The user does not have an owner account / the user is not the owner of the selected store.
+          content: {}
+        422:
+          description: Input rules broken - check description
+          content: {}
+
+  /order/{orderId}:
+    get:
+      tags:
+        - order
+      summary: Gets details about an order
+      description: The user must be logged in. The user must be the owner of the store the order belongs to or must have placed the order.
+      operationId: get_order_by_id
+      parameters:
+        - in: path
+          name: orderId
+          schema:
+            type: integer
+          description: ID of the order, as stored in the database
+          required: true
+      responses:
+        200:
+          description: Details about the order
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Order'
+                  - $ref: '#/components/schemas/OrderHiddenDetails'
+                  - $ref: '#/components/schemas/OrderItemArray'
+        403:
+          description: The user does not have an owner account / the user is not the owner of the store that the order belongs to and the user did not place the order
+          content: {}
+        422:
+          description: Input rules broken - check description
+          content: {}
+  /order/{orderId}/start:
+    patch:
+      tags:
+        - order
+      summary: Mark an order to be in progress
+      description: The user must be logged in. The user must be the owner of the store the order belongs to.
+      operationId: start_making_order
+      parameters:
+        - in: path
+          name: orderId
+          schema:
+            type: integer
+          description: ID of the order, as stored in the database
+          required: true
+      responses:
+        200:
+          description: Details about the order, excluding the items
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Order'
+                  - $ref: '#/components/schemas/OrderHiddenDetails'
+        403:
+          description: The user does not have an owner account / the user is not the owner of the store that the order belongs to
+          content: {}
+        422:
+          description: Input rules broken - check description
+          content: {}
+  /order/{orderId}/complete:
+    patch:
+      tags:
+        - order
+      summary: Mark an order to have been completed
+      description: The user must be logged in. The user must be the owner of the store the order belongs to.
+      operationId: complete_making_order
+      parameters:
+        - in: path
+          name: orderId
+          schema:
+            type: integer
+          description: ID of the order, as stored in the database
+          required: true
+      responses:
+        200:
+          description: Details about the order, excluding the items
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Order'
+                  - $ref: '#/components/schemas/OrderHiddenDetails'
+        403:
+          description: The user does not have an owner account / the user is not the owner of the store that the order belongs to
+          content: {}
+        422:
+          description: Input rules broken - check description
+          content: {}
+
+  /table:
+    put:
+      tags:
+        - table
+      summary: Creates a table for the specified store
+      description: The user must be logged in. The user must be the owner of the store they want to create the table for.
+      operationId: create_table
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Table'
+      responses:
+        201:
+          description: Table created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/TableHiddenDetails'
+                - $ref: '#/components/schemas/Table'
+        403:
+          description: The user does not have an owner account / the user is not the owner of the selected store.
+          content: {}
+        422:
+          description: Input rules broken - check description
+          content: {}
+  /table/{tableId}:
+    delete:
+      tags:
+        - table
+      summary: Deletes the table with the provided table ID
+      description: The user must be logged in.
+      operationId: delete_table
+      parameters:
+        - in: path
+          name: tableId
+          schema:
+            type: integer
+          description: ID of the table, as stored in the database
+          required: true
+      responses:
+        200:
+          description: Table deleted successfully
+          content: {}
+        403:
+          description: The user is not logged in
+          content: {}
+        422:
+          description: Input rules broken - check description
+          content: {}
+  /table/{tableId}/reserve:
+    put:
+      tags:
+        - table
+      summary: Reserves the table with the provided table ID
+      description: The user must be logged in.
+      operationId: reserve_table
+      parameters:
+        - in: path
+          name: tableId
+          schema:
+            type: integer
+          description: ID of the table, as stored in the database
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Reservation'
+      responses:
+        201:
+          description: Reservation created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ReservationHiddenDetails'
+                - $ref: '#/components/schemas/Reservation'
+        403:
+          description: The user is not logged in
+          content: {}
+        422:
+          description: Input rules broken - check description
+          content: {}
 
 
 components:
@@ -218,6 +523,7 @@ components:
       type: object
       required:
         - email
+        - is_owner
       properties:
         id:
           type: string
@@ -229,10 +535,12 @@ components:
           format: email
           minLength: 3
           maxLength: 128
+        is_owner:
+          type: boolean
+          description: Flag denoting whether or not an owner account needs to be created
     UserLogin:
       type: object
       required:
-        - username
         - password
       properties:
         username:
@@ -274,7 +582,7 @@ components:
           type: integer
           description: ID of the item, as stored in the database
         quantity:
-          type: string
+          type: integer
           description: Number of items of the same type in the order
     OrderItemHiddenDetails:
       type: object
@@ -347,7 +655,7 @@ components:
     MenuItemArray:
       type: object
       required:
-        - items
+        - order_items
       properties:
         order_items:
           type: array
@@ -356,9 +664,99 @@ components:
             allOf:
               - $ref: '#/components/schemas/MenuItem'
               - $ref: '#/components/schemas/MenuItemHiddenDetails'
+    Table:
+      type: object
+      required:
+        - store_id
+        - internal_id
+        - x_coords
+        - y_coords
+        - width
+        - height
+        - cap
+      properties:
+        store_id:
+          type: integer
+          description: ID of the store, as seen in the database
+        internal_id:
+          type: string
+          description: Internal ID of the table, as given by the user
+        x_coords:
+          type: integer
+          description: X-coordinates of the table - needed for mapping
+        y_coords:
+          type: integer
+          description: Y-coordinates of the table - needed for mapping
+        width:
+          type: integer
+          description: width of the table - needed for mapping
+        height:
+          type: integer
+          description: height of the table - needed for mapping
+        cap:
+          type: integer
+          description: Maximum capacity of the table, as given by the user
+    TableHiddenDetails:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID of the table, as stored in the database
+    TableArray:
+      type: object
+      required:
+        - tables
+      properties:
+        tables:
+          type: array
+          description: An array of table objects
+          items:
+            allOf:
+              - $ref: '#/components/schemas/Table'
+              - $ref: '#/components/schemas/TableHiddenDetails'
+    Reservation:
+      type: object
+      required:
+        - start_time
+        - end_time
+      properties:
+        start_time:
+          type: string
+          format: date-time
+          description: Start time of the reservation, following the ISO8601 guidelines
+        end_time:
+          type: string
+          format: date-time
+          description: End time of the reservation, following the ISO8601 guidelines
+    ReservationHiddenDetails:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID of the reservation, as stored in the database
+        customer_id:
+          type: string
+          description: ID of the customer, as stored in the user's database
+        table_id:
+          type: integer
+          description: ID of the table, as stored in the database
+    ReservationArray:
+      type: object
+      required:
+        - reservations
+      properties:
+        reservations:
+          type: array
+          description: An array of reservation objects
+          items:
+            allOf:
+              - $ref: '#/components/schemas/Reservation'
+              - $ref: '#/components/schemas/ReservationHiddenDetails'
+
 
   securitySchemes:
     userAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: Bearer tokens can be retrieved from the login endpoint

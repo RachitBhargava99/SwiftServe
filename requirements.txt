@@ -9,4 +9,4 @@ httptools
 PyYAML~=5.3.1
 requests~=2.24.0
 fastapi-users[sqlalchemy]
-databases[sqlite]
+databases[mysql,sqlite]

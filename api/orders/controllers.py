@@ -23,7 +23,7 @@ def create_order_item(db: Session, order_id: int, item_id: int, quantity: int) -
 
 def create_order_with_items(db: Session, buyer: str, store_id: int, order_items: List[schemas.OrderItemCreate]) -> Tuple[int, List[schemas.OrderItem]]:
     order = create_order(db, buyer, store_id)
-    db_order_items = [create_order_item(db, order.id, curr_item.item_id, curr_item.quantity) for curr_item in order_items]
+    db_order_items = [create_order_item(db, order.id, curr_item.item_id, curr_item.quantity).__dict__ for curr_item in order_items]
     return order.id, db_order_items
 
 

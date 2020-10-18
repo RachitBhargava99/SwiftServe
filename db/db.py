@@ -5,12 +5,12 @@ import databases
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./sql_app.db"
 
-database = databases.Database(SQLALCHEMY_DATABASE_URL)
-
 # SQLALCHEMY_DATABASE_URL = (
 #         'mysql+pymysql://{user}:{password}@localhost/{database}?unix_socket=/cloudsql/{connection_name}').format(
-#         user='root', password='password', database='crincs_sql',
-#         connection_name='thinger:us-east1:crincs')
+#         user='root', password='password', database='ss_sql',
+#         connection_name='thinger:us-east1:swiftserve')
+
+database = databases.Database(SQLALCHEMY_DATABASE_URL)
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL

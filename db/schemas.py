@@ -6,32 +6,6 @@ from typing import List, Optional
 
 
 # ===================================
-# Group Models start here
-# ===================================
-class GroupBase(BaseModel):
-    name: str
-
-
-class Group(GroupBase):
-    id: int
-    creation_time: datetime
-    is_active: bool
-    spotify_token: Optional[str]
-
-    class Config:
-        orm_mode = True
-
-
-class GroupCreate(GroupBase):
-    class Config:
-        orm_mode = True
-
-
-class GroupList(BaseModel):
-    groups: List[Group]
-
-
-# ===================================
 # User Models start here
 # ===================================
 class User(user_models.BaseUser):
@@ -162,3 +136,58 @@ class OrderWithItems(Order, OrderItemList):
 
 class OrderWithItemsList(BaseModel):
     orders: List[OrderWithItems]
+
+
+# ===================================
+# Table Models start here
+# ===================================
+class TableBase(BaseModel):
+    store_id: int
+    internal_id: str
+    x_coords: int
+    y_coords: int
+    width: int
+    height: int
+    cap: int
+
+
+class Table(TableBase):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+
+class TableCreate(TableBase):
+    class Config:
+        orm_mode = True
+
+
+class TableList(BaseModel):
+    tables: List[Table]
+
+
+# ===================================
+# Reservation Models start here
+# ===================================
+class ReservationBase(BaseModel):
+    start_time: datetime
+    end_time: datetime
+
+
+class Reservation(ReservationBase):
+    id: int
+    table_id: int
+    customer_id: str
+
+    class Config:
+        orm_mode = True
+
+
+class ReservationCreate(ReservationBase):
+    class Config:
+        orm_mode = True
+
+
+class ReservationList(BaseModel):
+    tables: List[Reservation]
